@@ -4,7 +4,8 @@ extern crate getopts;
 use getopts::Options;
 use std::env;
 use std::io;
-use std::net::TcpListener;
+use std::io::{Read, Write};
+use std::net::{TcpListener, TcpStream};
 use std::thread;
 
 
@@ -31,20 +32,19 @@ fn main() {
 
     let port = DEFAULT_PORT;
     let listener = listen(port)
-        .ok()
-        .expect(format!("Cannot bind to port {}", port));
+        .expect(&format!("Cannot bind to port {}", port));
 
     for stream in listener.incoming() {
         match stream {
-            Ok(stream) = {
+            Ok(stream) => {
                 thread::spawn(move|| {
                     handle_client(stream)
-                })
+                });
             }
             Err(e) => {
                 // TODO(xion): proper logging
-                io::stderr()
-                    .write_fmt("Failed to accept incoming connection: {?:}", e);
+                writeln!(io::stderr(),
+                    "Failed to accept incoming connection: {:?}", e).unwrap();
             }
         }
     }
@@ -60,18 +60,21 @@ fn print_usage(program: &str, opts: Options) {
 
 /// Create a TCP listener for given port.
 fn listen(port: u16) -> io::Result<TcpListener> {
-    TcpListener::bind(format!("0.0.0.0:{}", port))
+    TcpListener::bind(("0.0.0.0", port))
 }
 
 /// Handle the client of an echo server,
 /// sending back whatever we receive from them.
-fn handle_client(stream: TcpStream) {
+fn handle_client(mut stream: TcpStream) {
     let mut buffer = [0; BUFFER_SIZE];
     loop {
         if !stream.read(&mut buffer[..]).is_ok()  {
+            // TODO(xion): log error if it's other than EOF/broken pipe/etc.
+            return;
+        }
+        if !stream.write(&buffer).is_ok() {
             // TODO(xion): log the error?
             return;
         }
-        stream.write(&buffer);
     }
 }
