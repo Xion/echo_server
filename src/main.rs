@@ -18,7 +18,7 @@ fn main() {
     let program = args[0].clone();
 
     let mut options = Options::new();
-    options.optflag("h", "help", "Show this usage message.");
+    options.optflag("h", "help", "Show this usage message");
     options.optflagopt("p", "port", "Port to listen on", "PORT");
 
     let args = match options.parse(&args[1..]) {
