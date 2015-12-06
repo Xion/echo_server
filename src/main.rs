@@ -19,7 +19,7 @@ fn main() {
 
     let mut options = Options::new();
     options.optflag("h", "help", "Show this usage message.");
-    // TODO(xion): add flag for port to listen on
+    options.optflagopt("p", "port", "Port to listen on", "PORT");
 
     let args = match options.parse(&args[1..]) {
         Ok(m) => { m }
@@ -30,7 +30,10 @@ fn main() {
         return;
     }
 
-    let port = DEFAULT_PORT;
+    // TODO(xion): nicer error handling if invalid port was given
+    let port = args.opt_str("p").unwrap_or(DEFAULT_PORT.to_string())
+        .parse::<u16>().unwrap();
+
     let listener = listen(port)
         .expect(&format!("Cannot bind to port {}", port));
 
