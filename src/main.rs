@@ -21,10 +21,7 @@ fn main() {
     options.optflag("h", "help", "Show this usage message");
     options.optopt("p", "port", "Port to listen on", "PORT");
 
-    let args = match options.parse(&argv[1..]) {
-        Ok(m) => { m }
-        Err(e) => { panic!(e.to_string()) }
-    };
+    let args = options.parse(&argv[1..]).unwrap();
     if args.opt_present("h") {
         print_usage(&program, options);
         return;
@@ -50,7 +47,6 @@ fn main() {
             }
         }
     }
-    drop(listener);
 }
 
 
@@ -70,13 +66,25 @@ fn listen(port: u16) -> io::Result<TcpListener> {
 fn handle_client(mut stream: TcpStream) {
     let mut buffer = [0; BUFFER_SIZE];
     loop {
-        if !stream.read(&mut buffer).is_ok()  {
-            // TODO(xion): log error if it's other than EOF/broken pipe/etc.
-            return;
+        if let Err(err) = stream.read(&mut buffer) {
+            if err.kind() == io::ErrorKind::Interrupted { continue; }
+            if is_conn_broken_err(&err) { break; }
+            panic!(err.to_string());
         }
-        if !stream.write(&buffer).is_ok() {
-            // TODO(xion): log the error?
-            return;
+        if let Err(err) = stream.write(&buffer) {
+            if err.kind() == io::ErrorKind::Interrupted { continue; }
+            if is_conn_broken_err(&err) { break; }
+            panic!(err.to_string());
         }
+    }
+}
+
+/// Checks whether given I/O error represents a broken TCP connection.
+fn is_conn_broken_err(err: &io::Error) -> bool {
+    match err.kind() {
+        io::ErrorKind::BrokenPipe |
+        io::ErrorKind::ConnectionAborted |
+        io::ErrorKind::ConnectionReset => true,
+        _ => false,
     }
 }
