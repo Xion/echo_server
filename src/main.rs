@@ -3,8 +3,7 @@ extern crate getopts;
 
 use getopts::Options;
 use std::env;
-use std::io;
-use std::io::{Read, Write};
+use std::io::{self, Read, Write};
 use std::net::{TcpListener, TcpStream};
 use std::thread;
 
