@@ -20,7 +20,8 @@ fn main() {
     options.optflag("h", "help", "Show this usage message");
     options.optopt("p", "port", "Port to listen on", "PORT");
 
-    let args = options.parse(&argv[1..]).unwrap();
+    let args = options.parse(&argv[1..])
+        .unwrap_or_else(|e| panic!(e.to_string()));
     if args.opt_present("h") {
         print_usage(&program, options);
         return;
